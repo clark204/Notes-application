@@ -22,7 +22,6 @@ export const useSync = (onSyncComplete?: () => void) => {
         }[];
 
         for (const note of unsynced) {
-            // already exists in Supabase — just update it
             if (note.remote_id) {
                 const { error } = await supabase
                     .from("notes")
@@ -38,7 +37,6 @@ export const useSync = (onSyncComplete?: () => void) => {
                 continue;
             }
 
-            // new note — insert to Supabase
             const { data, error } = await supabase
                 .from("notes")
                 .insert({
@@ -67,6 +65,7 @@ export const useSync = (onSyncComplete?: () => void) => {
 
         if (error || !data) return;
 
+        // delete synced notes and re-insert fresh from Supabase
         db.execSync(`DELETE FROM notes WHERE synced = 1;`);
 
         for (const note of data) {
@@ -78,6 +77,10 @@ export const useSync = (onSyncComplete?: () => void) => {
                 note.id
             );
         }
+    };
+
+    const deleteRemoteNote = async (remoteId: string) => {
+        await supabase.from("notes").delete().eq("id", remoteId);
     };
 
     const sync = async () => {
@@ -120,5 +123,5 @@ export const useSync = (onSyncComplete?: () => void) => {
         };
     }, []);
 
-    return { sync };
+    return { sync, deleteRemoteNote };
 };

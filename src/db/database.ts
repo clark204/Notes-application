@@ -18,7 +18,6 @@ export const initDB = () => {
     try { db.execSync(`ALTER TABLE notes ADD COLUMN pinned INTEGER DEFAULT 0;`); } catch {}
     try { db.execSync(`ALTER TABLE notes ADD COLUMN synced INTEGER DEFAULT 0;`); } catch {}
     try { db.execSync(`ALTER TABLE notes ADD COLUMN remote_id TEXT;`); } catch {}
-
 };
 
 export const saveNote = (title: string, content: string, reminder: string | null) => {
@@ -58,6 +57,10 @@ export const getAllNotes = () => {
 
 export const getUnsyncedNotes = () => {
     return db.getAllSync(`SELECT * FROM notes WHERE synced = 0;`);
+};
+
+export const getNoteById = (id: number) => {
+    return db.getFirstSync(`SELECT * FROM notes WHERE id = ?;`, [id]);
 };
 
 export const markAsSynced = (id: number) => {

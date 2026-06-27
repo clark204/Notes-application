@@ -19,6 +19,7 @@ type Note = {
   created_at: string;
   synced: number;
   pinned: number;
+  remote_id: string | null;
 };
 
 export default function Index() {
@@ -49,7 +50,7 @@ export default function Index() {
     setNotes(data);
   };
 
-  const { sync } = useSync(refreshNotes);
+  const { sync, deleteRemoteNote } = useSync(refreshNotes);
 
   const stripHTML = (html: string) =>
     html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
@@ -61,14 +62,24 @@ export default function Index() {
 
   const pinnedNotes = notes.filter(n => n.pinned === 1);
   const unpinnedNotes = notes.filter(n => n.pinned === 0);
+  const handleDelete = async (item: Note) => {
+    // delete locally
+    deleteNotes([item.id]);
 
+    // delete from Supabase if synced
+    if (item.remote_id) {
+      await deleteRemoteNote(item.remote_id);
+    }
+
+    refreshNotes();
+  };
   const renderNote = (item: Note) => (
     <NoteDropdown
       key={item.id}
       noteId={item.id}
       isPinned={item.pinned === 1}
       onPress={() => { setSelectedNote(item); setShowAdd(true); }}
-      onDelete={() => { deleteNotes([item.id]); refreshNotes(); }}
+      onDelete={() => handleDelete(item)}
       onPin={() => { pinNotes([item.id], item.pinned !== 1); refreshNotes(); }}
     >
       <View style={styles.card}>
@@ -118,7 +129,7 @@ export default function Index() {
             user
               ? { icon: "sign-out", label: "Sign out", onPress: async () => { await supabase.auth.signOut(); setUser(null); } }
               : { icon: "user", label: "Sign in", onPress: () => router.push("/auth") },
-            { icon: "cloud", label: "Sync now", onPress: () => sync() },
+            { icon: "cloud", label: "Sync now", onPress: () => user ? sync() : router.push("/auth") },
           ]} />
         </View>
       </View>
